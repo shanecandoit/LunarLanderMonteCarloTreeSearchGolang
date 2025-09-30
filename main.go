@@ -66,6 +66,14 @@ func (g *Game) Update() error {
 		g.velocityX = 0
 	}
 
+	// Off screen termination
+	if g.landerX < -100 || g.landerX > 900 {
+		return ebiten.Termination
+	}
+	if g.landerY >= 700 || g.landerY < -100 {
+		return ebiten.Termination
+	}
+
 	return nil
 }
 
@@ -78,7 +86,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		flameImage := ebiten.NewImage(6, 10)
 		flameImage.Fill(color.RGBA{255, 165, 0, 255})
-		op.GeoM.Translate(12, 20) // position relative to lander image
+		op.GeoM.Translate(12, 20)   // position relative to lander image
 		op.GeoM.Translate(-15, -15) // move to origin
 		op.GeoM.Rotate(g.angle)
 		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
@@ -88,7 +96,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		flameImage := ebiten.NewImage(10, 4)
 		flameImage.Fill(color.RGBA{255, 165, 0, 255})
-		op.GeoM.Translate(25, 8) // position relative to lander image
+		op.GeoM.Translate(25, 8)    // position relative to lander image
 		op.GeoM.Translate(-15, -15) // move to origin
 		op.GeoM.Rotate(g.angle)
 		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
@@ -98,7 +106,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		flameImage := ebiten.NewImage(10, 4)
 		flameImage.Fill(color.RGBA{255, 165, 0, 255})
-		op.GeoM.Translate(-5, 8) // position relative to lander image
+		op.GeoM.Translate(-5, 8)    // position relative to lander image
 		op.GeoM.Translate(-15, -15) // move to origin
 		op.GeoM.Rotate(g.angle)
 		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
