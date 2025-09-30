@@ -27,7 +27,7 @@ func (g *Game) Update() error {
 	// Space or Up arrow key for main thrust
 	if ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyUp) {
 		g.thrustDown = 1
-		g.velocityX += math.Sin(g.angle) * -0.1
+		g.velocityX += math.Sin(g.angle) * 0.1
 		g.velocityY += math.Cos(g.angle) * -0.1
 	} else {
 		g.thrustDown = 0
@@ -76,11 +76,32 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if g.thrustDown > 0 {
 		// Draw flame when thrusting
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(-3, 10) // move flame below lander
-		op.GeoM.Rotate(g.angle)
-		op.GeoM.Translate(g.landerX, g.landerY)
 		flameImage := ebiten.NewImage(6, 10)
 		flameImage.Fill(color.RGBA{255, 165, 0, 255})
+		op.GeoM.Translate(12, 20) // position relative to lander image
+		op.GeoM.Translate(-15, -15) // move to origin
+		op.GeoM.Rotate(g.angle)
+		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
+		screen.DrawImage(flameImage, op)
+	}
+	if g.thrustLeft > 0 { // flame on the right
+		op := &ebiten.DrawImageOptions{}
+		flameImage := ebiten.NewImage(10, 4)
+		flameImage.Fill(color.RGBA{255, 165, 0, 255})
+		op.GeoM.Translate(25, 8) // position relative to lander image
+		op.GeoM.Translate(-15, -15) // move to origin
+		op.GeoM.Rotate(g.angle)
+		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
+		screen.DrawImage(flameImage, op)
+	}
+	if g.thrustRight > 0 { // flame on the left
+		op := &ebiten.DrawImageOptions{}
+		flameImage := ebiten.NewImage(10, 4)
+		flameImage.Fill(color.RGBA{255, 165, 0, 255})
+		op.GeoM.Translate(-5, 8) // position relative to lander image
+		op.GeoM.Translate(-15, -15) // move to origin
+		op.GeoM.Rotate(g.angle)
+		op.GeoM.Translate(g.landerX, g.landerY) // move to screen
 		screen.DrawImage(flameImage, op)
 	}
 
