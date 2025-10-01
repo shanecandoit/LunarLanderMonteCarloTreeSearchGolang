@@ -21,9 +21,29 @@ type Game struct {
 	TickLimit           int
 	TickElapsed         int
 	screenshotRequested bool
+	crashed             bool
+	won                 bool
+	paused              bool
 }
 
 func (g *Game) Update() error {
+	if g.paused {
+		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+			// Unpause and reset the game
+			g.paused = false
+			g.crashed = false
+			g.won = false
+			g.Lander = &Lander{X: 390, Y: 0}
+			g.TickElapsed = 0
+		}
+		return nil
+	}
+
+	// Escape key to quit
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyP) {
 		g.screenshotRequested = true
 	}
@@ -37,9 +57,26 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 
-	// Check for collisions with the background
-	if background.CheckCollision(g.Lander.X, g.Lander.Y) {
-		return ebiten.Termination
+	// Create a GameState to check for landing status
+	gs := &GameState{
+		LanderX:   g.Lander.X,
+		LanderY:   g.Lander.Y,
+		VelocityX: g.Lander.VelocityX,
+		VelocityY: g.Lander.VelocityY,
+		Angle:     g.Lander.Angle,
+	}
+
+	landingStatus := gs.CheckLanding()
+	if landingStatus == "Crash" {
+		g.crashed = true
+		g.paused = true
+		g.Lander.Y = 485
+		g.Lander.VelocityY = 0
+		g.Lander.VelocityX = 0
+	}
+	if landingStatus == "Safe Landing" {
+		g.won = true
+		g.paused = true
 	}
 
 	// Off screen termination
@@ -47,11 +84,6 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 	if g.Lander.Y >= 700 || g.Lander.Y < -100 {
-		return ebiten.Termination
-	}
-
-	// Escape key to quit
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		return ebiten.Termination
 	}
 
@@ -70,6 +102,13 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.Lander.ThrustDown, g.Lander.ThrustLeft, g.Lander.ThrustRight, g.TickElapsed, g.TickLimit,
 	)
 	ebitenutil.DebugPrintAt(screen, msg, 0, 500)
+
+	if g.crashed {
+		ebitenutil.DebugPrintAt(screen, "You Crashed", 350, 300)
+	}
+	if g.won {
+		ebitenutil.DebugPrintAt(screen, "You Won", 350, 300)
+	}
 
 	if g.screenshotRequested {
 		g.saveScreenshot(screen)
