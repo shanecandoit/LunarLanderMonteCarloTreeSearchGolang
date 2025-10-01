@@ -18,8 +18,8 @@ type Lander struct {
 }
 
 func (l *Lander) Update() {
-	// Space or Up arrow key for main thrust
-	if ebiten.IsKeyPressed(ebiten.KeySpace) || ebiten.IsKeyPressed(ebiten.KeyUp) {
+	// Up arrow key for main thrust
+	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		l.ThrustDown = 1
 		l.VelocityX += math.Sin(l.Angle) * 0.1
 		l.VelocityY += math.Cos(l.Angle) * -0.1
