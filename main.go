@@ -3,26 +3,42 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"image/png"
 	"log"
+	"os"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 var landerImage *ebiten.Image
+var background *Background
 
 type Game struct {
-	Lander      *Lander
-	TickLimit   int
-	TickElapsed int
+	Lander              *Lander
+	TickLimit           int
+	TickElapsed         int
+	screenshotRequested bool
 }
 
 func (g *Game) Update() error {
+	if inpututil.IsKeyJustPressed(ebiten.KeyP) {
+		g.screenshotRequested = true
+	}
+
+	background.Update()
 	g.Lander.Update()
 
 	// Time tick logic
 	g.TickElapsed++
 	if g.TickLimit > 0 && g.TickElapsed >= g.TickLimit {
+		return ebiten.Termination
+	}
+
+	// Check for collisions with the background
+	if background.CheckCollision(g.Lander.X, g.Lander.Y) {
 		return ebiten.Termination
 	}
 
@@ -34,11 +50,17 @@ func (g *Game) Update() error {
 		return ebiten.Termination
 	}
 
+	// Escape key to quit
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.Black)
+	background.Draw(screen)
 	g.Lander.Draw(screen)
 
 	// draw thrust as bits, not booleans
@@ -48,6 +70,24 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.Lander.ThrustDown, g.Lander.ThrustLeft, g.Lander.ThrustRight, g.TickElapsed, g.TickLimit,
 	)
 	ebitenutil.DebugPrintAt(screen, msg, 0, 500)
+
+	if g.screenshotRequested {
+		g.screenshotRequested = false
+		go g.saveScreenshot(screen)
+	}
+}
+
+func (g *Game) saveScreenshot(screen *ebiten.Image) {
+	filename := time.Now().Format("2006.01.02_15.04.05") + ".png"
+	file, err := os.Create(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	if err := png.Encode(file, screen); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func drawLander(screen *ebiten.Image, landerX, landerY, angle float64) {
@@ -70,6 +110,7 @@ func main() {
 	ebitenutil.DrawRect(landerImage, 0, 20, 5, 10, color.RGBA{255, 0, 255, 255})
 	ebitenutil.DrawRect(landerImage, 25, 20, 5, 10, color.RGBA{255, 0, 255, 255})
 
+	background = NewBackground()
 	game := &Game{
 		Lander:    &Lander{X: 390, Y: 0},
 		TickLimit: 1000,
