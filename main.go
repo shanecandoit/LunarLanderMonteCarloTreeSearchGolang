@@ -72,12 +72,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	ebitenutil.DebugPrintAt(screen, msg, 0, 500)
 
 	if g.screenshotRequested {
-		g.screenshotRequested = false
-		go g.saveScreenshot(screen)
+		g.saveScreenshot(screen)
 	}
 }
 
 func (g *Game) saveScreenshot(screen *ebiten.Image) {
+	g.screenshotRequested = false
 	filename := time.Now().Format("2006.01.02_15.04.05") + ".png"
 	file, err := os.Create(filename)
 	if err != nil {

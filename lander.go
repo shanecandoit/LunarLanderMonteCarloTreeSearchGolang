@@ -49,8 +49,8 @@ func (l *Lander) Update() {
 	l.Y += l.VelocityY
 
 	// Prevent the lander from falling below the ground
-	if l.Y > 400 {
-		l.Y = 400
+	if l.Y > 485 {
+		l.Y = 485
 		l.VelocityY = 0
 		l.VelocityX = 0
 	}

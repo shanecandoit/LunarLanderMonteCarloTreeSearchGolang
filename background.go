@@ -21,11 +21,13 @@ func NewBackground() *Background {
 	return &Background{
 		Peaks: []Triangle{
 			// Left peaks
-			{X1: 0, Y1: 400, X2: 100, Y2: 300, X3: 200, Y3: 400},
-			{X1: 200, Y1: 400, X2: 300, Y2: 350, X3: 400, Y3: 400},
+			{X1: 0, Y1: 500, X2: 100, Y2: 400, X3: 200, Y3: 500},
+			{X1: 200, Y1: 500, X2: 250, Y2: 450, X3: 300, Y3: 500},
 			// Right peaks
-			{X1: 600, Y1: 400, X2: 700, Y2: 350, X3: 800, Y3: 400},
-			{X1: 800, Y1: 400, X2: 900, Y2: 300, X3: 1000, Y3: 400},
+			{X1: 500, Y1: 500, X2: 550, Y2: 470, X3: 600, Y3: 500},
+			{X1: 600, Y1: 500, X2: 700, Y2: 450, X3: 800, Y3: 500},
+			{X1: 800, Y1: 500, X2: 900, Y2: 400, X3: 1000, Y3: 500},
+			{X1: 1000, Y1: 500, X2: 1050, Y2: 480, X3: 1100, Y3: 500},
 		},
 	}
 }
@@ -36,11 +38,11 @@ func (b *Background) Update() {
 
 func (b *Background) Draw(screen *ebiten.Image) {
 	// Draw the flat area
-	ebitenutil.DrawLine(screen, 300, 400, 500, 400, color.White)
+	ebitenutil.DrawLine(screen, 300, 500, 500, 500, color.White)
 
 	// Draw flags
-	ebitenutil.DrawLine(screen, 300, 400, 300, 380, color.White)
-	ebitenutil.DrawLine(screen, 500, 400, 500, 380, color.White)
+	ebitenutil.DrawLine(screen, 300, 500, 300, 480, color.White)
+	ebitenutil.DrawLine(screen, 500, 500, 500, 480, color.White)
 
 	// Draw peaks
 	for _, peak := range b.Peaks {
