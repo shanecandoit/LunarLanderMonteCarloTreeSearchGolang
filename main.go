@@ -27,40 +27,52 @@ type Game struct {
 }
 
 func (g *Game) Update() error {
+	// Handle input
 	if g.paused {
-		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-			// Unpause and reset the game
-			g.paused = false
-			g.crashed = false
-			g.won = false
-			g.Lander = &Lander{X: 390, Y: 0}
-			g.TickElapsed = 0
-		}
-		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
-			return ebiten.Termination
-		}
-		return nil
+		return g.handlePausedInput()
 	}
-
-	// Escape key to quit
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		return ebiten.Termination
 	}
-
 	if inpututil.IsKeyJustPressed(ebiten.KeyP) {
 		g.screenshotRequested = true
 	}
 
+	// Update game state
 	background.Update()
 	g.Lander.Update()
-
-	// Time tick logic
 	g.TickElapsed++
+
+	// Check game logic
 	if g.TickLimit > 0 && g.TickElapsed >= g.TickLimit {
 		return ebiten.Termination
 	}
+	if g.checkLandingStatus() {
+		return nil
+	}
+	if g.checkOffScreen() {
+		return ebiten.Termination
+	}
 
-	// Create a GameState to check for landing status
+	return nil
+}
+
+func (g *Game) handlePausedInput() error {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
+		// Unpause and reset the game
+		g.paused = false
+		g.crashed = false
+		g.won = false
+		g.Lander = &Lander{X: 390, Y: 0}
+		g.TickElapsed = 0
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return ebiten.Termination
+	}
+	return nil
+}
+
+func (g *Game) checkLandingStatus() bool {
 	gs := &GameState{
 		LanderX:   g.Lander.X,
 		LanderY:   g.Lander.Y,
@@ -68,7 +80,6 @@ func (g *Game) Update() error {
 		VelocityY: g.Lander.VelocityY,
 		Angle:     g.Lander.Angle,
 	}
-
 	landingStatus := gs.CheckLanding()
 	if landingStatus == "Crash" {
 		g.crashed = true
@@ -76,21 +87,18 @@ func (g *Game) Update() error {
 		g.Lander.Y = 485
 		g.Lander.VelocityY = 0
 		g.Lander.VelocityX = 0
+		return true
 	}
 	if landingStatus == "Safe Landing" {
 		g.won = true
 		g.paused = true
+		return true
 	}
+	return false
+}
 
-	// Off screen termination
-	if g.Lander.X < -100 || g.Lander.X > 900 {
-		return ebiten.Termination
-	}
-	if g.Lander.Y >= 700 || g.Lander.Y < -100 {
-		return ebiten.Termination
-	}
-
-	return nil
+func (g *Game) checkOffScreen() bool {
+	return g.Lander.X < -100 || g.Lander.X > 900 || g.Lander.Y >= 700 || g.Lander.Y < -100
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
