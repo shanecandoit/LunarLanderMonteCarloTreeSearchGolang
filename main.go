@@ -14,7 +14,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-var landerImage *ebiten.Image
 var background *Background
 
 type Game struct {
@@ -180,25 +179,12 @@ func (g *Game) saveScreenshot(screen *ebiten.Image) {
 	}
 }
 
-func drawLander(screen *ebiten.Image, landerX, landerY, angle float64) {
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-15, -15)
-	op.GeoM.Rotate(angle)
-	op.GeoM.Translate(landerX, landerY)
-	screen.DrawImage(landerImage, op)
-}
-
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return 800, 600
 }
 
 func main() {
-	landerImage = ebiten.NewImage(30, 30)
-	// box body
-	ebitenutil.DrawRect(landerImage, 5, 0, 20, 20, color.RGBA{255, 0, 255, 255})
-	// legs
-	ebitenutil.DrawRect(landerImage, 0, 20, 5, 10, color.RGBA{255, 0, 255, 255})
-	ebitenutil.DrawRect(landerImage, 25, 20, 5, 10, color.RGBA{255, 0, 255, 255})
+	ebiten.SetWindowResizable(true)
 
 	background = NewBackground()
 	game := &Game{

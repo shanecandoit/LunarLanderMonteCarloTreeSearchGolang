@@ -5,7 +5,19 @@ import (
 	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
+
+var landerImage *ebiten.Image
+
+func init() {
+	landerImage = ebiten.NewImage(30, 30)
+	// box body
+	ebitenutil.DrawRect(landerImage, 5, 0, 20, 20, color.RGBA{255, 0, 255, 255})
+	// legs
+	ebitenutil.DrawRect(landerImage, 0, 20, 5, 10, color.RGBA{255, 0, 255, 255})
+	ebitenutil.DrawRect(landerImage, 25, 20, 5, 10, color.RGBA{255, 0, 255, 255})
+}
 
 type Lander struct {
 	X, Y        float64
@@ -50,7 +62,12 @@ func (l *Lander) Update() {
 }
 
 func (l *Lander) Draw(screen *ebiten.Image) {
-	drawLander(screen, l.X, l.Y, l.Angle)
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(-15, -15)
+	op.GeoM.Rotate(l.Angle)
+	op.GeoM.Translate(l.X, l.Y)
+	screen.DrawImage(landerImage, op)
+
 	if l.ThrustDown > 0 {
 		// Draw flame when thrusting
 		op := &ebiten.DrawImageOptions{}
