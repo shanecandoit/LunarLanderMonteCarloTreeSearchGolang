@@ -1,5 +1,7 @@
 # Lunar Lander Monte Carlo Tree Search
 
+Inspiration: [Gym Lunar Lander](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
+
 ## Action Space
 
 There are four discrete actions available:
