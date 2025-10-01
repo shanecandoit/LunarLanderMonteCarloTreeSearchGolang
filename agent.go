@@ -115,8 +115,39 @@ func (a *Agent) simulate(state *GameState) float64 {
 			break
 		}
 		action := rand.Intn(4)
-		simulatedState = simulatedState.Step(action) // Handle single return value
-		totalReward += 1.0                           // Example reward increment (adjust as needed)
+		simulatedState = simulatedState.Step(action)
+
+		// Proximity to the landing pad
+		distance := math.Sqrt(math.Pow(simulatedState.LanderX-0, 2) + math.Pow(simulatedState.LanderY-400, 2))
+		totalReward -= distance * 0.1
+
+		// Speed
+		speed := math.Sqrt(math.Pow(simulatedState.VelocityX, 2) + math.Pow(simulatedState.VelocityY, 2))
+		totalReward -= speed * 0.1
+
+		// Angle
+		totalReward -= math.Abs(simulatedState.Angle) * 0.1
+
+		// Leg Contact
+		if simulatedState.LanderY >= 400 {
+			totalReward += 10
+		}
+
+		// Engine Usage
+		if action == 1 || action == 3 { // Side engine
+			totalReward -= 0.03
+		} else if action == 2 { // Main engine
+			totalReward -= 0.3
+		}
+
+		// Episode Outcome
+		if simulatedState.IsDone() {
+			if simulatedState.IsSafeLanding() {
+				totalReward += 100
+			} else {
+				totalReward -= 100
+			}
+		}
 	}
 	return totalReward
 }

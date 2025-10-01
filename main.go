@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"image/png"
 	"log"
+	"math"
 	"os"
 	"time"
 
@@ -24,6 +25,7 @@ type Game struct {
 	crashed             bool
 	won                 bool
 	paused              bool
+	Score               float64
 }
 
 func (g *Game) Update() error {
@@ -31,6 +33,11 @@ func (g *Game) Update() error {
 	if g.paused {
 		return g.handlePausedInput()
 	}
+
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		g.paused = true
+	}
+
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		return ebiten.Termination
 	}
@@ -42,6 +49,26 @@ func (g *Game) Update() error {
 	background.Update()
 	g.Lander.Update()
 	g.TickElapsed++
+
+	// Calculate score
+	// Proximity to the landing pad
+	distance := math.Sqrt(math.Pow(g.Lander.X-390, 2) + math.Pow(g.Lander.Y-485, 2))
+	g.Score -= distance * 0.01
+
+	// Speed
+	speed := math.Sqrt(math.Pow(g.Lander.VelocityX, 2) + math.Pow(g.Lander.VelocityY, 2))
+	g.Score -= speed * 0.01
+
+	// Angle
+	g.Score -= math.Abs(g.Lander.Angle) * 0.01
+
+	// Engine Usage
+	if g.Lander.ThrustDown > 0 {
+		g.Score -= 0.3
+	}
+	if g.Lander.ThrustLeft > 0 || g.Lander.ThrustRight > 0 {
+		g.Score -= 0.03
+	}
 
 	// Check game logic
 	if g.TickLimit > 0 && g.TickElapsed >= g.TickLimit {
@@ -58,16 +85,25 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) handlePausedInput() error {
-	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
-		// Unpause and reset the game
-		g.paused = false
-		g.crashed = false
-		g.won = false
-		g.Lander = &Lander{X: 390, Y: 0}
-		g.TickElapsed = 0
-	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		return ebiten.Termination
+	}
+
+	if g.won || g.crashed {
+		// If game is over, any key (other than escape) resets the game
+		if len(inpututil.AppendJustPressedKeys(nil)) > 0 {
+			g.paused = false
+			g.crashed = false
+			g.won = false
+			g.Lander = &Lander{X: 390, Y: 0}
+			g.TickElapsed = 0
+			g.Score = 0
+		}
+	} else {
+		// If manually paused, only space unpauses
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			g.paused = false
+		}
 	}
 	return nil
 }
@@ -87,11 +123,13 @@ func (g *Game) checkLandingStatus() bool {
 		g.Lander.Y = 485
 		g.Lander.VelocityY = 0
 		g.Lander.VelocityX = 0
+		g.Score -= 100
 		return true
 	}
 	if landingStatus == "Safe Landing" {
 		g.won = true
 		g.paused = true
+		g.Score += 100
 		return true
 	}
 	return false
@@ -108,17 +146,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// draw thrust as bits, not booleans
 	msg := fmt.Sprintf(
-		"X: %4.2f, Y: %4.2f\nVelX: %4.2f, VelY: %4.2f\nAngle: %4.2f\nThrust: D:%d L:%d R:%d\nTick: %d/%d",
+		"X: %4.2f, Y: %4.2f\nVelX: %4.2f, VelY: %4.2f\nAngle: %4.2f\nThrust: D:%d L:%d R:%d\nTick: %d/%d\nScore: %4.2f",
 		g.Lander.X, g.Lander.Y, g.Lander.VelocityX, g.Lander.VelocityY, g.Lander.Angle,
-		g.Lander.ThrustDown, g.Lander.ThrustLeft, g.Lander.ThrustRight, g.TickElapsed, g.TickLimit,
+		g.Lander.ThrustDown, g.Lander.ThrustLeft, g.Lander.ThrustRight, g.TickElapsed, g.TickLimit, g.Score,
 	)
 	ebitenutil.DebugPrintAt(screen, msg, 0, 500)
 
 	if g.crashed {
 		ebitenutil.DebugPrintAt(screen, "You Crashed", 350, 300)
-	}
-	if g.won {
+	} else if g.won {
 		ebitenutil.DebugPrintAt(screen, "You Won", 350, 300)
+	} else if g.paused {
+		ebitenutil.DebugPrintAt(screen, "Paused", 350, 300)
 	}
 
 	if g.screenshotRequested {
@@ -165,6 +204,7 @@ func main() {
 	game := &Game{
 		Lander:    &Lander{X: 390, Y: 0},
 		TickLimit: 1000,
+		Score:     0,
 	}
 	if err := ebiten.RunGame(game); err != nil && err != ebiten.Termination {
 		log.Fatal(err)
