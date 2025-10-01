@@ -36,6 +36,9 @@ func (g *Game) Update() error {
 			g.Lander = &Lander{X: 390, Y: 0}
 			g.TickElapsed = 0
 		}
+		if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+			return ebiten.Termination
+		}
 		return nil
 	}
 
