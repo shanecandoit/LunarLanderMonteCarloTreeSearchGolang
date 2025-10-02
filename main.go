@@ -25,6 +25,9 @@ type Game struct {
 	won                 bool
 	paused              bool
 	Score               float64
+	prevDistance        float64 // Track previous distance for reward calculation
+	prevSpeed           float64 // Track previous speed for reward calculation
+	hasLanded           bool    // Track if legs have touched ground this episode
 }
 
 func (g *Game) Update() error {
@@ -49,19 +52,57 @@ func (g *Game) Update() error {
 	g.Lander.Update()
 	g.TickElapsed++
 
-	// Calculate score
-	// Proximity to the landing pad
-	distance := math.Sqrt(math.Pow(g.Lander.X-390, 2) + math.Pow(g.Lander.Y-485, 2))
-	g.Score -= distance * 0.01
+	// Check for landing/crash
+	if IsLanderOnGround(g.Lander.Y) && !g.paused {
+		// Snap lander to ground level
+		g.Lander.Y = GroundLevel - LanderBottomOffset
 
-	// Speed
-	speed := math.Sqrt(math.Pow(g.Lander.VelocityX, 2) + math.Pow(g.Lander.VelocityY, 2))
-	g.Score -= speed * 0.01
+		// Check if it's on the landing pad
+		onPad := IsOnLandingPad(g.Lander.X)
 
-	// Angle
-	g.Score -= math.Abs(g.Lander.Angle) * 0.01
+		// Check if landing conditions are safe
+		safe := g.Lander.SafeToLand()
 
-	// Engine Usage
+		if safe && onPad {
+			// Safe landing!
+			g.won = true
+			g.paused = true
+			g.Score += 100
+			g.Lander.VelocityX = 0
+			g.Lander.VelocityY = 0
+		} else {
+			// Crash - either too fast, wrong angle, or off pad
+			g.crashed = true
+			g.paused = true
+			g.Score -= 100
+			g.Lander.VelocityX = 0
+			g.Lander.VelocityY = 0
+		}
+
+		return nil
+	}
+
+	// Calculate reward per frame (matching Gym Lunar Lander)
+	// Reference: https://gymnasium.farama.org/environments/box2d/lunar_lander/
+
+	// 1. Reward for moving closer to landing pad (positive) or penalty for moving away (negative)
+	targetX := (LandingPadLeft + LandingPadRight) / 2.0 // Center of landing pad = 400
+	targetY := GroundLevel - LanderBottomOffset         // Ground level = 485
+	prevDistance := g.prevDistance
+	currentDistance := math.Sqrt(math.Pow(g.Lander.X-targetX, 2) + math.Pow(g.Lander.Y-targetY, 2))
+	g.Score += (prevDistance - currentDistance) * 0.1 // Reward for getting closer
+	g.prevDistance = currentDistance
+
+	// 2. Reward for moving slower (positive) or penalty for speeding up (negative)
+	prevSpeed := g.prevSpeed
+	currentSpeed := math.Sqrt(math.Pow(g.Lander.VelocityX, 2) + math.Pow(g.Lander.VelocityY, 2))
+	g.Score += (prevSpeed - currentSpeed) * 0.1 // Reward for slowing down
+	g.prevSpeed = currentSpeed
+
+	// 3. Penalty for being tilted
+	g.Score -= math.Abs(g.Lander.Angle) * 0.5
+
+	// 4. Penalty for engine usage (fuel cost)
 	if g.Lander.ThrustDown > 0 {
 		g.Score -= 0.3
 	}
@@ -69,12 +110,15 @@ func (g *Game) Update() error {
 		g.Score -= 0.03
 	}
 
+	// 5. Reward for legs touching ground (when close to landing)
+	if IsLanderOnGround(g.Lander.Y) && !g.hasLanded {
+		g.Score += 10.0 // Per-leg bonus (we'll treat it as both legs = 10 total for simplicity)
+		g.hasLanded = true
+	}
+
 	// Check game logic
 	if g.TickLimit > 0 && g.TickElapsed >= g.TickLimit {
 		return ebiten.Termination
-	}
-	if g.checkLandingStatus() {
-		return nil
 	}
 	if g.checkOffScreen() {
 		return ebiten.Termination
@@ -97,6 +141,12 @@ func (g *Game) handlePausedInput() error {
 			g.Lander = &Lander{X: 390, Y: 0}
 			g.TickElapsed = 0
 			g.Score = 0
+			g.hasLanded = false
+			// Initialize distance and speed tracking
+			targetX := (LandingPadLeft + LandingPadRight) / 2.0
+			targetY := GroundLevel - LanderBottomOffset
+			g.prevDistance = math.Sqrt(math.Pow(g.Lander.X-targetX, 2) + math.Pow(g.Lander.Y-targetY, 2))
+			g.prevSpeed = 0
 		}
 	} else {
 		// If manually paused, only space unpauses
@@ -105,33 +155,6 @@ func (g *Game) handlePausedInput() error {
 		}
 	}
 	return nil
-}
-
-func (g *Game) checkLandingStatus() bool {
-	gs := &GameState{
-		LanderX:   g.Lander.X,
-		LanderY:   g.Lander.Y,
-		VelocityX: g.Lander.VelocityX,
-		VelocityY: g.Lander.VelocityY,
-		Angle:     g.Lander.Angle,
-	}
-	landingStatus := gs.CheckLanding()
-	if landingStatus == "Crash" {
-		g.crashed = true
-		g.paused = true
-		g.Lander.Y = 485
-		g.Lander.VelocityY = 0
-		g.Lander.VelocityX = 0
-		g.Score -= 100
-		return true
-	}
-	if landingStatus == "Safe Landing" {
-		g.won = true
-		g.paused = true
-		g.Score += 100
-		return true
-	}
-	return false
 }
 
 func (g *Game) checkOffScreen() bool {
@@ -180,17 +203,27 @@ func (g *Game) saveScreenshot(screen *ebiten.Image) {
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return 800, 600
+	return ScreenWidth, ScreenHeight
 }
 
 func main() {
 	ebiten.SetWindowResizable(true)
 
 	background = NewBackground()
+
+	// Initialize game state
+	initialLander := &Lander{X: 390, Y: 0}
+	targetX := (LandingPadLeft + LandingPadRight) / 2.0
+	targetY := GroundLevel - LanderBottomOffset
+	initialDistance := math.Sqrt(math.Pow(initialLander.X-targetX, 2) + math.Pow(initialLander.Y-targetY, 2))
+
 	game := &Game{
-		Lander:    &Lander{X: 390, Y: 0},
-		TickLimit: 1000,
-		Score:     0,
+		Lander:       initialLander,
+		TickLimit:    1000,
+		Score:        0,
+		prevDistance: initialDistance,
+		prevSpeed:    0,
+		hasLanded:    false,
 	}
 	if err := ebiten.RunGame(game); err != nil && err != ebiten.Termination {
 		log.Fatal(err)

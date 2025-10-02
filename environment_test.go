@@ -50,8 +50,9 @@ func TestCheckLanding(t *testing.T) {
 		t.Errorf("Expected status 'In Air', but got '%s'", status)
 	}
 
-	// Test case 2: Safe landing
+	// Test case 2: Safe landing (on landing pad with safe speeds)
 	gs = &GameState{
+		LanderX:   400, // On the landing pad (300-500)
 		LanderY:   485,
 		VelocityY: 1.0,
 		VelocityX: 0.5,
@@ -62,15 +63,29 @@ func TestCheckLanding(t *testing.T) {
 		t.Errorf("Expected status 'Safe Landing', but got '%s'", status)
 	}
 
-	// Test case 3: Crash
+	// Test case 3: Crash (too fast)
 	gs = &GameState{
+		LanderX:   400, // On the landing pad
 		LanderY:   485,
-		VelocityY: 3.0,
+		VelocityY: 3.0, // Too fast!
 		VelocityX: 0.5,
 		Angle:     0.1,
 	}
 	status = gs.CheckLanding()
 	if status != "Crash" {
 		t.Errorf("Expected status 'Crash', but got '%s'", status)
+	}
+
+	// Test case 4: Crash (off landing pad)
+	gs = &GameState{
+		LanderX:   250, // Outside the landing pad
+		LanderY:   485,
+		VelocityY: 1.0,
+		VelocityX: 0.5,
+		Angle:     0.1,
+	}
+	status = gs.CheckLanding()
+	if status != "Crash" {
+		t.Errorf("Expected status 'Crash' (off pad), but got '%s'", status)
 	}
 }

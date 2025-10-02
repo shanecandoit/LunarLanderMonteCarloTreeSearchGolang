@@ -33,8 +33,8 @@ func (l *Lander) Update() {
 	// Up arrow key for main thrust
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		l.ThrustDown = 1
-		l.VelocityX += math.Sin(l.Angle) * 0.1
-		l.VelocityY += math.Cos(l.Angle) * -0.1
+		l.VelocityX += math.Sin(l.Angle) * MainThrust
+		l.VelocityY += math.Cos(l.Angle) * -MainThrust
 	} else {
 		l.ThrustDown = 0
 	}
@@ -42,7 +42,7 @@ func (l *Lander) Update() {
 	// Left arrow key for left orientation engine
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		l.ThrustLeft = 1
-		l.Angle -= 0.05
+		l.Angle -= SideThrust
 	} else {
 		l.ThrustLeft = 0
 	}
@@ -50,15 +50,22 @@ func (l *Lander) Update() {
 	// Right arrow key for right orientation engine
 	if ebiten.IsKeyPressed(ebiten.KeyRight) {
 		l.ThrustRight = 1
-		l.Angle += 0.05
+		l.Angle += SideThrust
 	} else {
 		l.ThrustRight = 0
 	}
 
 	// Update lander position and velocity
-	l.VelocityY += 0.05 // Gravity
+	l.VelocityY += Gravity // Gravity
 	l.X += l.VelocityX
 	l.Y += l.VelocityY
+}
+
+// SafeToLand checks if the lander's speed and angle are within safe landing parameters
+func (l *Lander) SafeToLand() bool {
+	return math.Abs(l.VelocityY) <= SafeVerticalSpeed &&
+		math.Abs(l.VelocityX) <= SafeHorizontalSpeed &&
+		math.Abs(l.Angle) <= SafeLandingAngle
 }
 
 func (l *Lander) Draw(screen *ebiten.Image) {

@@ -21,13 +21,13 @@ func NewBackground() *Background {
 	return &Background{
 		Peaks: []Triangle{
 			// Left peaks
-			{X1: 0, Y1: 500, X2: 100, Y2: 400, X3: 200, Y3: 500},
-			{X1: 200, Y1: 500, X2: 250, Y2: 450, X3: 300, Y3: 500},
+			{X1: 0, Y1: GroundLevel, X2: 100, Y2: GroundLevel - 100, X3: 200, Y3: GroundLevel},
+			{X1: 200, Y1: GroundLevel, X2: 250, Y2: GroundLevel - 50, X3: LandingPadLeft, Y3: GroundLevel},
 			// Right peaks
-			{X1: 500, Y1: 500, X2: 550, Y2: 470, X3: 600, Y3: 500},
-			{X1: 600, Y1: 500, X2: 700, Y2: 450, X3: 800, Y3: 500},
-			{X1: 800, Y1: 500, X2: 900, Y2: 400, X3: 1000, Y3: 500},
-			{X1: 1000, Y1: 500, X2: 1050, Y2: 480, X3: 1100, Y3: 500},
+			{X1: LandingPadRight, Y1: GroundLevel, X2: 550, Y2: GroundLevel - 30, X3: 600, Y3: GroundLevel},
+			{X1: 600, Y1: GroundLevel, X2: 700, Y2: GroundLevel - 50, X3: 800, Y3: GroundLevel},
+			{X1: 800, Y1: GroundLevel, X2: 900, Y2: GroundLevel - 100, X3: 1000, Y3: GroundLevel},
+			{X1: 1000, Y1: GroundLevel, X2: 1050, Y2: GroundLevel - 20, X3: 1100, Y3: GroundLevel},
 		},
 	}
 }
@@ -37,12 +37,12 @@ func (b *Background) Update() {
 }
 
 func (b *Background) Draw(screen *ebiten.Image) {
-	// Draw the flat area
-	ebitenutil.DrawLine(screen, 300, 500, 500, 500, color.White)
+	// Draw the flat landing area
+	ebitenutil.DrawLine(screen, LandingPadLeft, GroundLevel, LandingPadRight, GroundLevel, color.White)
 
-	// Draw flags
-	ebitenutil.DrawLine(screen, 300, 500, 300, 480, color.White)
-	ebitenutil.DrawLine(screen, 500, 500, 500, 480, color.White)
+	// Draw flags at the landing pad boundaries
+	ebitenutil.DrawLine(screen, LandingPadLeft, GroundLevel, LandingPadLeft, GroundLevel-20, color.White)
+	ebitenutil.DrawLine(screen, LandingPadRight, GroundLevel, LandingPadRight, GroundLevel-20, color.White)
 
 	// Draw peaks
 	for _, peak := range b.Peaks {
