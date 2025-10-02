@@ -21,7 +21,10 @@ type GameState struct {
 
 // Environment represents the landing environment with peaks.
 type Environment struct {
-	Peaks []Triangle
+	Peaks       []Triangle
+	TargetX     float64 // X-coordinate of the center of the landing pad
+	TargetY     float64 // Y-coordinate of the landing pad
+	TargetWidth float64 // Width of the landing pad
 }
 
 type Triangle struct {
@@ -40,8 +43,10 @@ func NewEnvironment() *Environment {
 			// Right peaks
 			{X1: LandingPadRight, Y1: GroundLevel, X2: 550, Y2: GroundLevel - 30, X3: 600, Y3: GroundLevel},
 			{X1: 600, Y1: GroundLevel, X2: 700, Y2: GroundLevel - 50, X3: 800, Y3: GroundLevel},
-			{X1: 800, Y1: GroundLevel, X2: 900, Y2: GroundLevel - 100, X3: 1000, Y3: GroundLevel},
 		},
+		TargetX:     (LandingPadLeft + LandingPadRight) / 2.0,
+		TargetY:     GroundLevel,
+		TargetWidth: LandingPadRight - LandingPadLeft,
 	}
 }
 
@@ -161,4 +166,11 @@ func pointInTriangle(px, py float64, t Triangle) bool {
 	tCoord := 1 / (2 * area) * (t.X1*t.Y2 - t.Y1*t.X2 + (t.Y1-t.Y2)*px + (t.X2-t.X1)*py)
 
 	return s > 0 && tCoord > 0 && (s+tCoord) < 1
+}
+
+// Distance calculates the Euclidean distance from the lander to the center of the landing pad
+func (e *Environment) Distance(lander *Lander) float64 {
+	dx := lander.X - e.TargetX
+	dy := lander.Y - e.TargetY
+	return math.Sqrt(dx*dx + dy*dy)
 }

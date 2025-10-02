@@ -169,15 +169,13 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 }
 
 func main() {
-	ebiten.SetWindowResizable(true)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeDisabled)
 
 	Env = NewEnvironment()
 
 	// Initialize game state
 	initialLander := &Lander{X: 390, Y: 0}
-	targetX := (LandingPadLeft + LandingPadRight) / 2.0
-	targetY := GroundLevel - LanderBottomOffset
-	initialDistance := math.Sqrt(math.Pow(initialLander.X-targetX, 2) + math.Pow(initialLander.Y-targetY, 2))
+	initialDistance := Env.Distance(initialLander)
 
 	game := &Game{
 		Lander:       initialLander,
